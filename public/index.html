@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>人力成本分析 — 工时成本看板</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/charts.js"></script>
+  <script src="/js/tables.js"></script>
+  <script src="/js/dashboard.js"></script>
+</head>
+<body>
+
+  <!-- Loading -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">正在加载看板数据...</div>
+  </div>
+
+  <!-- Header -->
+  <header class="dashboard-header">
+    <div class="header-title">
+      📊 人力成本分析看板
+      <span class="region-tag" id="header-region">全部大区</span>
+    </div>
+    <div class="header-actions">
+      <select id="pay-period-selector">
+        <option>加载中...</option>
+      </select>
+      <div id="user-info">
+        <span class="user-avatar">U</span>
+        <span class="user-name">用户</span>
+        <button class="btn-logout" onclick="Auth.logout()">退出</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="dashboard-container">
+
+    <!-- ========== 人力成本分析 KPI ========== -->
+    <div class="section-title">💰 人力成本分析</div>
+    <div class="kpi-grid">
+      <div class="kpi-card cost" id="cost-total-pay">
+        <div class="kpi-label">工资总额</div>
+        <div class="kpi-value">-</div>
+      </div>
+      <div class="kpi-card" id="cost-avg-pay">
+        <div class="kpi-label">人均工资</div>
+        <div class="kpi-value">-</div>
+      </div>
+      <div class="kpi-card success" id="cost-regular-pay">
+        <div class="kpi-label">常规出勤工资</div>
+        <div class="kpi-value">-</div>
+        <div class="kpi-sub">-</div>
+      </div>
+      <div class="kpi-card warning" id="cost-overtime-pay">
+        <div class="kpi-label">加班工资</div>
+        <div class="kpi-value">-</div>
+        <div class="kpi-sub">-</div>
+      </div>
+      <div class="kpi-card" id="cost-leave-pay">
+        <div class="kpi-label">有薪假工资</div>
+        <div class="kpi-value">-</div>
+        <div class="kpi-sub">-</div>
+      </div>
+      <div class="kpi-card" id="cost-per-hour">
+        <div class="kpi-label">单位工时成本</div>
+        <div class="kpi-value">-</div>
+      </div>
+      <div class="kpi-card warning" id="cost-overtime-ratio">
+        <div class="kpi-label">加班工资占比</div>
+        <div class="kpi-value">-</div>
+      </div>
+    </div>
+
+    <!-- ========== 工时分析 KPI ========== -->
+    <div class="section-title">⏱️ 工时分析</div>
+    <div class="kpi-grid">
+      <div class="kpi-card" id="hours-headcount">
+        <div class="kpi-label">在册人数</div>
+        <div class="kpi-value">-</div>
+      </div>
+      <div class="kpi-card" id="hours-total">
+        <div class="kpi-label">总工时</div>
+        <div class="kpi-value">-</div>
+      </div>
+      <div class="kpi-card" id="hours-avg">
+        <div class="kpi-label">人均工时</div>
+        <div class="kpi-value">-</div>
+      </div>
+      <div class="kpi-card success" id="hours-regular">
+        <div class="kpi-label">常规出勤工时</div>
+        <div class="kpi-value">-</div>
+        <div class="kpi-sub">-</div>
+      </div>
+      <div class="kpi-card warning" id="hours-overtime">
+        <div class="kpi-label">加班工时</div>
+        <div class="kpi-value">-</div>
+        <div class="kpi-sub">-</div>
+      </div>
+      <div class="kpi-card" id="hours-leave">
+        <div class="kpi-label">有薪假工时</div>
+        <div class="kpi-value">-</div>
+        <div class="kpi-sub">-</div>
+      </div>
+      <div class="kpi-card danger" id="hours-overtime-rate">
+        <div class="kpi-label">加班率</div>
+        <div class="kpi-value">-</div>
+      </div>
+    </div>
+
+    <!-- ========== 图表区域 ========== -->
+    <div class="section-title">📈 组织维度分析</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <canvas id="chart-cost-bar"></canvas>
+      </div>
+      <div class="chart-card">
+        <canvas id="chart-cost-per-hour"></canvas>
+      </div>
+      <div class="chart-card">
+        <canvas id="chart-hours-bar"></canvas>
+      </div>
+    </div>
+
+    <!-- 多维度趋势图 -->
+    <div class="trend-grid">
+      <div class="trend-chart">
+        <canvas id="chart-trend-hours"></canvas>
+      </div>
+      <div class="trend-chart">
+        <canvas id="chart-trend-avg"></canvas>
+      </div>
+      <div class="trend-chart">
+        <canvas id="chart-trend-efficiency"></canvas>
+      </div>
+    </div>
+
+    <!-- ========== 四级组织汇总表 ========== -->
+    <div class="table-section" id="table-org4">
+      <div class="table-section-header">
+        <h3>四级组织汇总</h3>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>四级组织</th>
+              <th class="num">人数</th>
+              <th class="num">工资总额</th>
+              <th class="num">人均工资</th>
+              <th class="num">加班工资占比</th>
+              <th class="num">总工时</th>
+              <th class="num">人均工时</th>
+              <th class="num">加班率</th>
+              <th class="num">单位工时成本</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== 五级组织汇总表 ========== -->
+    <div class="table-section" id="table-org5">
+      <div class="table-section-header">
+        <h3>五级组织汇总</h3>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>五级组织</th>
+              <th>所属四级</th>
+              <th class="num">人数</th>
+              <th class="num">工资总额</th>
+              <th class="num">人均工资</th>
+              <th class="num">加班工资占比</th>
+              <th class="num">总工时</th>
+              <th class="num">人均工时</th>
+              <th class="num">加班率</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== 员工明细表 ========== -->
+    <div class="table-section" id="table-employees">
+      <div class="table-section-header">
+        <h3>员工明细</h3>
+        <span class="table-info">共 <strong id="employee-count">0</strong> 人</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>工号</th>
+              <th>姓名</th>
+              <th>公司</th>
+              <th>所在组织</th>
+              <th class="num">薪酬标准</th>
+              <th class="num">常规工时</th>
+              <th class="num">加班工时</th>
+              <th class="num">有薪假</th>
+              <th class="num">总工时</th>
+              <th class="num">常规工资</th>
+              <th class="num">加班工资</th>
+              <th class="num">有薪假工资</th>
+              <th class="num">总工资</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // 页面加载时初始化看板
+    document.addEventListener('DOMContentLoaded', () => {
+      Dashboard.init();
+    });
+  </script>
+</body>
+</html>

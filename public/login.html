@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>人力成本分析 — 登录</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/config.js"></script>
+  <script src="/js/auth.js"></script>
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <div class="login-logo">📊</div>
+    <h1>人力成本分析平台</h1>
+    <p>工时成本看板 · 飞书账号登录</p>
+
+    <!-- 已登录状态 -->
+    <div id="logged-in-state" style="display:none;">
+      <div class="user-card">
+        <div class="avatar" id="user-avatar">U</div>
+        <div class="info">
+          <div class="name" id="user-name">用户</div>
+          <div class="role" id="user-role">加载中...</div>
+        </div>
+      </div>
+      <button class="btn-feishu-login" onclick="goToDashboard()" style="background:#22c55e;">
+        进入看板
+      </button>
+      <p style="margin-top:12px;font-size:13px;">
+        <a href="#" onclick="Auth.clearToken();location.reload();" style="color:#64748b;">切换账号</a>
+      </p>
+    </div>
+
+    <!-- 未登录状态 -->
+    <div id="not-logged-in-state">
+      <a href="#" class="btn-feishu-login" onclick="Auth.login();return false;">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v16h12V4H6zm2 4h8v2H8V8zm0 4h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
+        飞书账号登录
+      </a>
+    </div>
+
+    <div id="error-msg" style="display:none;margin-top:16px;color:#ef4444;font-size:13px;"></div>
+
+    <div class="login-footer">
+      使用飞书账号登录后，系统将根据您的权限展示对应数据
+    </div>
+  </div>
+
+  <script>
+    // 检查是否从飞书回调返回（URL 含 token 参数）
+    if (Auth.handleCallback()) {
+      // token 已保存，刷新页面展示已登录状态
+      location.reload();
+    }
+
+    // 检查是否已登录
+    (async () => {
+      const user = await Auth.checkAuth();
+      if (user && user.role !== 'unauthorized') {
+        document.getElementById('logged-in-state').style.display = 'block';
+        document.getElementById('not-logged-in-state').style.display = 'none';
+        document.getElementById('user-avatar').textContent = (user.name || 'U')[0];
+        document.getElementById('user-name').textContent = user.name;
+        const roleMap = { admin: '管理员', region_manager: '区域经理', viewer: '查看者' };
+        document.getElementById('user-role').textContent = roleMap[user.role] || user.role;
+      }
+
+      // 检查错误参数
+      const params = new URLSearchParams(window.location.search);
+      const err = params.get('error');
+      if (err) {
+        const errMap = {
+          no_code: '缺少授权码，请重试',
+          token_failed: '飞书授权失败，请重试',
+          user_info_failed: '获取用户信息失败，请重试',
+          server_error: '服务器错误，请稍后重试',
+        };
+        const el = document.getElementById('error-msg');
+        el.textContent = errMap[err] || '登录失败';
+        el.style.display = 'block';
+      }
+    })();
+
+    function goToDashboard() {
+      window.location.href = '/';
+    }
+  </script>
+</body>
+</html>
