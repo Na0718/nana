@@ -47,23 +47,23 @@
   </div>
 
   <script>
-    // 检查是否从飞书回调返回（URL 含 token 参数）
+    // 1) 飞书回调：token 已通过 URL 传回，存入 localStorage 后直接跳看板
     if (Auth.handleCallback()) {
-      // token 已保存，刷新页面展示已登录状态
-      location.reload();
+      // handleCallback 内部已调用 setToken + replaceState
+      // 直接跳转到看板首页，由看板页面的 auth-guard 校验身份
+      window.location.replace('/');
     }
 
-    // 检查是否已登录
+    // 2) 已登录用户：自动跳转看板
     (async () => {
       const user = await Auth.checkAuth();
       if (user && user.role !== 'unauthorized') {
-        document.getElementById('logged-in-state').style.display = 'block';
-        document.getElementById('not-logged-in-state').style.display = 'none';
-        document.getElementById('user-avatar').textContent = (user.name || 'U')[0];
-        document.getElementById('user-name').textContent = user.name;
-        const roleMap = { admin: '管理员', region_manager: '区域经理', viewer: '查看者' };
-        document.getElementById('user-role').textContent = roleMap[user.role] || user.role;
+        // 已有有效登录态，直接进入看板
+        window.location.replace('/');
+        return;
       }
+
+      // 未登录 → 显示登录按钮（HTML 默认状态）
 
       // 检查错误参数
       const params = new URLSearchParams(window.location.search);
@@ -80,10 +80,6 @@
         el.style.display = 'block';
       }
     })();
-
-    function goToDashboard() {
-      window.location.href = '/';
-    }
   </script>
 </body>
 </html>
