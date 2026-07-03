@@ -1,5 +1,5 @@
 // api/_lib/response.js
-// 统一响应格式 + CORS 头
+// 统一响应格式 + CORS 头（兼容 Vercel 原生 http.ServerResponse）
 
 const ALLOWED_ORIGINS = [
   'http://localhost:3000',
@@ -8,11 +8,15 @@ const ALLOWED_ORIGINS = [
   process.env.BASE_URL,
 ].filter(Boolean);
 
-function corsHeaders(req) {
+function getOrigin(req) {
   const origin = req.headers.origin || '';
-  const allowed = ALLOWED_ORIGINS.some((o) => origin.startsWith(o)) ? origin : ALLOWED_ORIGINS[0] || '*';
+  const matched = ALLOWED_ORIGINS.find((o) => origin.startsWith(o));
+  return matched || ALLOWED_ORIGINS[0] || '*';
+}
+
+function corsHeaders(req) {
   return {
-    'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Origin': getOrigin(req),
     'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type,Authorization',
     'Access-Control-Allow-Credentials': 'true',
@@ -20,22 +24,22 @@ function corsHeaders(req) {
 }
 
 function json(res, data, status = 200, extraHeaders = {}) {
-  return res
-    .status(status)
-    .set({ ...extraHeaders, 'Content-Type': 'application/json' })
-    .json(data);
+  const headers = { ...extraHeaders, 'Content-Type': 'application/json' };
+  res.writeHead(status, headers);
+  res.end(JSON.stringify(data));
 }
 
 function ok(res, data, req) {
-  return json(res, { code: 0, data }, 200, corsHeaders(req));
+  return json(res, { code: 0, data }, 200, corsHeaders(req || {}));
 }
 
 function fail(res, message, status = 400, req) {
-  return json(res, { code: -1, message }, status, corsHeaders(req));
+  return json(res, { code: -1, message }, status, corsHeaders(req || {}));
 }
 
 function handleOptions(req, res) {
-  res.status(204).set(corsHeaders(req)).end();
+  res.writeHead(204, corsHeaders(req));
+  res.end();
 }
 
 module.exports = { corsHeaders, json, ok, fail, handleOptions };
