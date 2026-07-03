@@ -68,8 +68,9 @@ const Auth = {
       this.setUser(json.data);
       return json.data;
     } catch {
-      // 网络错误时使用缓存
-      return this.getUser();
+      // 网络错误：清除可能过期的缓存，强制重新登录
+      this.clearToken();
+      return null;
     }
   },
 

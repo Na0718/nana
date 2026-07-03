@@ -126,12 +126,14 @@ const Dashboard = {
   },
 
   showUnauthorized() {
+    // 可能是缓存的旧权限，强制清除后重试
+    Auth.clearToken();
     const el = document.getElementById('loading-overlay');
     if (el) {
       el.innerHTML = `<div class="unauthorized-message">
         <h2>暂无访问权限</h2>
-        <p>您的账号尚未被授权访问此看板，请联系管理员。</p>
-        <button onclick="Auth.logout()">退出登录</button>
+        <p>可能是权限缓存导致，请尝试重新登录或联系管理员。</p>
+        <button class="btn-feishu-login" onclick="Auth.login()" style="background:#22c55e;">重新登录</button>
       </div>`;
       el.classList.remove('hidden');
     }
